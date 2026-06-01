@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, orderBy, limit, onSnapshot, getDocs, setDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, getDocs, setDoc, doc, where } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
 import { PLANTS, PlantConfig } from '../../config/plants';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,9 +20,11 @@ import {
     CheckCircle2,
     Shield,
     Loader2,
-    Link
+    Link,
+    Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { cn } from '../../lib/utils';
 import { CATEGORY_LABELS } from '../../data/menu';
 import { detectProtein } from '../../utils/spellcheck';
 import Image from 'next/image';
@@ -54,6 +56,8 @@ export default function AdminDashboard() {
     const [approvals, setApprovals] = useState<ApprovalAlert[]>([]);
     const [plantsEmpty, setPlantsEmpty] = useState(false);
     const [expandedApprovalId, setExpandedApprovalId] = useState<string | null>(null);
+    const [publishedMenus, setPublishedMenus] = useState<any[]>([]);
+    const [currentTime, setCurrentTime] = useState<number>(Date.now());
     const router = useRouter();
 
     const isMockMode = useMemo(() => {
@@ -66,6 +70,96 @@ export default function AdminDashboard() {
 
     const toggleExpandApproval = (id: string) => {
         setExpandedApprovalId(prev => prev === id ? null : id);
+    };
+
+    // Timer global para actualizar la cuenta regresiva en caliente
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(Date.now());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Cargar menús publicados activos
+    useEffect(() => {
+        if (!user) return;
+
+        if (isMockMode) {
+            const loadMockPublishedMenus = () => {
+                const list: any[] = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('mock_menu_')) {
+                        try {
+                            const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+                            if (parsed.status === 'published') {
+                                list.push(parsed);
+                            }
+                        } catch (e) {}
+                    }
+                }
+                setPublishedMenus(list);
+            };
+
+            loadMockPublishedMenus();
+            const interval = setInterval(loadMockPublishedMenus, 2000);
+            return () => clearInterval(interval);
+        } else {
+            const menusRef = collection(db, 'menus');
+            const q = query(menusRef, where('status', '==', 'published'));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const menusData: any[] = [];
+                snapshot.forEach((doc) => {
+                    menusData.push({ id: doc.id, ...doc.data() });
+                });
+                setPublishedMenus(menusData);
+            }, (error) => {
+                console.error('Error al escuchar menús publicados:', error);
+            });
+            return () => unsubscribe();
+        }
+    }, [user, isMockMode]);
+
+    const getPlantCountdown = (plantId: string) => {
+        const plantMenus = publishedMenus.filter(m => m.plantId === plantId && m.expirationDate);
+        if (plantMenus.length === 0) return null;
+
+        const now = currentTime;
+        const activeMenus = plantMenus.filter(m => {
+            const expTime = new Date(m.expirationDate).getTime();
+            return expTime > now;
+        });
+
+        if (activeMenus.length === 0) {
+            return {
+                text: 'Plazo expirado / Cerrado',
+                isUrgent: false,
+                hasActiveMenu: false
+            };
+        }
+
+        activeMenus.sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime());
+        const targetMenu = activeMenus[0];
+        const targetTime = new Date(targetMenu.expirationDate).getTime();
+        const diff = targetTime - now;
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        const isLessDay = diff < 24 * 60 * 60 * 1000;
+
+        let text = '';
+        if (days > 0) text += `${days}d `;
+        text += `${hours}h ${minutes}m ${seconds}s`;
+
+        return {
+            text,
+            isUrgent: isLessDay,
+            hasActiveMenu: true,
+            weekStartDate: targetMenu.weekStartDate
+        };
     };
 
     useEffect(() => {
@@ -470,28 +564,42 @@ export default function AdminDashboard() {
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {Object.values(PLANTS).map((plant: PlantConfig) => (
-                                <motion.div
-                                    whileHover={{ scale: 1.02 }}
-                                    key={plant.id}
-                                    className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-blue-900/60 transition-all shadow-xl group relative overflow-hidden"
-                                >
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest block mb-1">
-                                                    {plant.location}
-                                                </span>
-                                                <h3 className="text-lg font-bold text-white uppercase group-hover:text-blue-400 transition-colors">
-                                                    {plant.name}
-                                                </h3>
+                            {Object.values(PLANTS).map((plant: PlantConfig) => {
+                                const countdown = getPlantCountdown(plant.id);
+                                return (
+                                    <motion.div
+                                        whileHover={{ scale: 1.02 }}
+                                        key={plant.id}
+                                        className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-blue-900/60 transition-all shadow-xl group relative overflow-hidden"
+                                    >
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest block mb-1">
+                                                        {plant.location}
+                                                    </span>
+                                                    <h3 className="text-lg font-bold text-white uppercase group-hover:text-blue-400 transition-colors">
+                                                        {plant.name}
+                                                    </h3>
+                                                </div>
                                             </div>
+                                            <p className="text-xs text-slate-400 leading-relaxed">
+                                                Empresa: <strong className="text-slate-300">{plant.companyName}</strong> <br />
+                                                Categorías: {plant.categories?.length || (plant.isMultiBar ? 'Múltiples barras' : 0)} definidas.
+                                            </p>
+
+                                            {countdown && countdown.hasActiveMenu && (
+                                                <div className={cn(
+                                                    "px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 border w-fit transition-all duration-300",
+                                                    countdown.isUrgent
+                                                        ? "bg-red-950/40 border-red-800 text-red-400 animate-pulse shadow-md shadow-red-500/5"
+                                                        : "bg-blue-950/40 border-blue-900 text-blue-400 shadow-md shadow-blue-500/5"
+                                                )}>
+                                                    <Clock className={cn("w-3.5 h-3.5", countdown.isUrgent && "animate-pulse")} />
+                                                    <span>Cierre: {countdown.text}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <p className="text-xs text-slate-400 leading-relaxed">
-                                            Empresa: <strong className="text-slate-300">{plant.companyName}</strong> <br />
-                                            Categorías: {plant.categories?.length || (plant.isMultiBar ? 'Múltiples barras' : 0)} definidas.
-                                        </p>
-                                    </div>
 
                                     <div className="mt-8 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
                                         <div className="flex flex-wrap items-center gap-2 justify-start">
@@ -518,7 +626,7 @@ export default function AdminDashboard() {
                                         </button>
                                     </div>
                                 </motion.div>
-                            ))}
+                            )})}
                         </div>
                     </div>
 

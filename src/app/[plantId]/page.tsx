@@ -56,8 +56,6 @@ export default function PlantSelector() {
     const [isApproved, setIsApproved] = useState(false);
     const [error, setError] = useState('');
     const [modifiedDishes, setModifiedDishes] = useState<Set<string>>(new Set());
-    const [countdownText, setCountdownText] = useState<string>('');
-    const [isUrgent, setIsUrgent] = useState<boolean>(false);
 
     // Cargar nombres/cargos locales
     useEffect(() => {
@@ -244,47 +242,7 @@ export default function PlantSelector() {
 
     const activeWeek = useMemo(() => displayedWeeks[currentWeekIdx], [displayedWeeks, currentWeekIdx]);
 
-    // Timer de Cuenta Regresiva para la fecha límite de aprobación
-    useEffect(() => {
-        if (!activeWeek?.expirationDate) {
-            setCountdownText('');
-            setIsUrgent(false);
-            return;
-        }
 
-        const targetTime = new Date(activeWeek.expirationDate).getTime();
-
-        const updateTimer = () => {
-            const now = new Date().getTime();
-            const diff = targetTime - now;
-
-            if (diff <= 0) {
-                setCountdownText('Tiempo de aprobación finalizado');
-                setIsUrgent(true);
-                // Si el tiempo expira mientras la página está abierta, recargar para bloquearla
-                fetchPublishedMenus();
-                return;
-            }
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            // Si quedan menos de 24 horas, marcar como urgente
-            const isLessDay = diff < 24 * 60 * 60 * 1000;
-            setIsUrgent(isLessDay);
-
-            let text = '';
-            if (days > 0) text += `${days}d `;
-            text += `${hours}h ${minutes}m ${seconds}s`;
-            setCountdownText(text);
-        };
-
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-        return () => clearInterval(interval);
-    }, [activeWeek?.expirationDate, fetchPublishedMenus]);
 
     // Manejar el cambio de platillo por parte de la maquila
     const handleUpdateDish = (dayIdx: number, dishId: string, newName: string) => {
@@ -609,46 +567,7 @@ export default function PlantSelector() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12 space-y-8 sm:space-y-12">
-                {/* Countdown Timer Banner */}
-                {countdownText && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={cn(
-                            "flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border transition-all duration-300 shadow-lg",
-                            isUrgent
-                                ? "bg-red-500/10 border-red-500/30 text-red-200"
-                                : "bg-blue-500/10 border-blue-500/30 text-blue-200"
-                        )}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className={cn(
-                                "p-2 rounded-xl flex items-center justify-center",
-                                isUrgent ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"
-                            )}>
-                                <Clock className={cn("w-5 h-5", isUrgent && "animate-pulse")} />
-                            </div>
-                            <div className="text-center sm:text-left">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80">
-                                    Límite de Aprobación de la Semana
-                                </p>
-                                <p className="text-xs font-semibold text-slate-400">
-                                    El menú se cerrará automáticamente al vencer el plazo de esta semana.
-                                </p>
-                            </div>
-                        </div>
 
-                        <div className={cn(
-                            "px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest flex items-center gap-2 border whitespace-nowrap",
-                            isUrgent
-                                ? "bg-red-950/60 border-red-800 text-red-400 shadow-md shadow-red-500/5 animate-pulse"
-                                : "bg-blue-950/60 border-blue-900 text-blue-400 shadow-md shadow-blue-500/5"
-                        )}>
-                            <span>Tiempo restante:</span>
-                            <span className="font-mono text-base font-black">{countdownText}</span>
-                        </div>
-                    </motion.div>
-                )}
 
                 {/* Selector de Semanas publicadas */}
                 {displayedWeeks.length > 1 && (
