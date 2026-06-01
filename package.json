@@ -1,0 +1,51 @@
+{
+    "name": "selector-de-menu-master",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "@types/papaparse": "^5.5.2",
+        "canvas-confetti": "^1.9.4",
+        "clsx": "^2.1.1",
+        "date-fns": "^4.1.0",
+        "dom-parser": "^1.1.5",
+        "dotenv": "^17.3.1",
+        "firebase": "^12.14.0",
+        "framer-motion": "^12.26.2",
+        "jspdf": "^4.0.0",
+        "jspdf-autotable": "^5.0.7",
+        "lucide-react": "^0.562.0",
+        "next": "^16.2.6",
+        "node-fetch": "^3.3.2",
+        "papaparse": "^5.5.3",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "react-hot-toast": "^2.6.0",
+        "tailwind-merge": "^3.4.0",
+        "vite-plugin-pwa": "^1.2.0"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.1",
+        "@types/canvas-confetti": "^1.9.0",
+        "@types/node": "^25.9.1",
+        "@types/react": "^19.2.5",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^5.1.1",
+        "autoprefixer": "^10.4.23",
+        "eslint": "^9.39.1",
+        "eslint-plugin-react-hooks": "^7.0.1",
+        "eslint-plugin-react-refresh": "^0.4.24",
+        "globals": "^16.5.0",
+        "postcss": "^8.5.6",
+        "puppeteer": "^25.1.0",
+        "tailwindcss": "^3.4.19",
+        "typescript": "^6.0.3",
+        "vite": "^7.2.4"
+    }
+}

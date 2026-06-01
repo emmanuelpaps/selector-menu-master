@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: 'Outfit', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    background-color: #f8fafc;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+@layer components {
+    .industrial-table th {
+        @apply bg-ave-navy text-white font-semibold py-4 px-4 text-left border border-white/10 uppercase tracking-wider text-sm;
+    }
+
+    .industrial-table td {
+        @apply border border-ave-gray p-4 align-top transition-all duration-200;
+    }
+
+    .industrial-input {
+        @apply w-full px-4 py-3 bg-white border-2 border-ave-gray rounded-lg focus:border-ave-navy focus:outline-none transition-colors duration-200;
+    }
+
+    .btn-primary {
+        @apply bg-ave-navy text-white px-8 py-4 rounded-lg font-bold uppercase tracking-widest hover:bg-ave-blue transition-all duration-300 shadow-lg hover:shadow-ave-navy/20 active:scale-95 flex items-center justify-center gap-2;
+    }
+}
+
+.ave-navy-bg {
+    background-color: #1B365D;
+}
+
+.footer-gradient {
+    background: linear-gradient(to right, #1B365D, #162C4E);
+}
+
+/* Scrollbar personalizado para look Premium */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
