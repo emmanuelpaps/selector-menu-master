@@ -179,15 +179,7 @@ export default function PlantSelector() {
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 
-                // Verificar si expiró la selección (expiración automática)
-                if (data.expirationDate) {
-                    const now = new Date();
-                    const exp = new Date(data.expirationDate);
-                    if (now > exp) {
-                        // Omitir este menú porque ya expiró
-                        return;
-                    }
-                }
+
 
                 // Cargar barras
                 Object.keys(data.bars || {}).forEach(barId => {
